@@ -1,0 +1,15 @@
+{% extends 'index.html' %}
+
+{% block title %}Subir imagenes{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+<h1>Cargar Imagen</h1>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Cargar</button>
+</form>
+{% endblock %}

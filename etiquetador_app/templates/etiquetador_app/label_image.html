@@ -1,0 +1,271 @@
+{% extends 'index.html' %}
+
+{% block title %}Etiquetador imagenes{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/konva/8.4.3/konva.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Etiquetar Imagen: {{ image.name }}</h1>
+
+<label for="classSelector">Clase:</label>
+<select id="classSelector">
+    <option value="" disabled selected>No seleccionada</option>
+</select>
+<input type="text" id="newClass" placeholder="Nueva clase" />
+<button id="addClass">Añadir Clase</button>
+
+<div id="container"></div>
+<button id="save">Guardar Etiquetas</button>
+<button id="download">Descargar Etiquetas</button>
+
+<script>
+
+    fetch(`/load_annotations/{{ image.id }}/`)
+    .then((response) => response.json())
+    .then((data) => {
+        data.annotations.forEach((annotation) => {
+            const box = new Konva.Rect({
+                x: annotation.x * width,
+                y: annotation.y * height,
+                width: annotation.width * width,
+                height: annotation.height * height,
+                stroke: classColors[annotation.class] || 'black',
+                strokeWidth: 2,
+                draggable: true,
+                name: annotation.class,
+            });
+
+            drawingLayer.add(box);
+
+            // Permitir redimensionar con transformador
+            box.on('click', () => {
+                transformer.nodes([box]);
+                drawingLayer.draw();
+            });
+
+            box.on('transform', () => {
+                const newWidth = box.width() * box.scaleX();
+                const newHeight = box.height() * box.scaleY();
+                box.width(newWidth);
+                box.height(newHeight);
+                box.scaleX(1);
+                box.scaleY(1);
+            });
+        });
+
+        drawingLayer.draw();
+    });
+    
+    const width = 800;
+    const height = 600;
+
+    // Configurar el escenario
+    const stage = new Konva.Stage({
+        container: 'container',
+        width: width,
+        height: height,
+    });
+
+    // Capa para la imagen
+    const imageLayer = new Konva.Layer();
+    stage.add(imageLayer);
+
+    // Capa para el fondo y los rectángulos
+    const drawingLayer = new Konva.Layer();
+    stage.add(drawingLayer);
+
+    // Transformador para redimensionar rectángulos
+    const transformer = new Konva.Transformer({
+        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], // Anclas
+        rotateEnabled: false,
+        keepRatio: false,
+    });
+    drawingLayer.add(transformer);
+
+    // Cargar la imagen en la capa de la imagen
+    const imageObj = new Image();
+    imageObj.onload = function () {
+        const konvaImage = new Konva.Image({
+            x: 0,
+            y: 0,
+            image: imageObj,
+            width: width,
+            height: height,
+        });
+        imageLayer.add(konvaImage);
+        imageLayer.draw();
+    };
+    imageObj.src = "{{ image.image.url }}";
+
+    // Crear un fondo transparente para capturar clics
+    const background = new Konva.Rect({
+        x: 0,
+        y: 0,
+        width: stage.width(),
+        height: stage.height(),
+        fill: 'transparent',
+        listening: true, // Asegura que capture los clics
+    });
+    drawingLayer.add(background);
+
+    // Dibujar la capa inicial
+    drawingLayer.draw();
+
+    // Variables para las clases y dibujo
+    const classSelector = document.getElementById('classSelector');
+    let classColors = {};
+    let selectedClass = '';
+    let isDrawing = false; // Indica si se está dibujando
+    let startX = 0;
+    let startY = 0;
+    let currentRect = null;
+
+    // Cargar clases desde el backend
+    fetch('/manage_classes/')
+        .then(response => response.json())
+        .then(data => {
+            data.classes.forEach(cls => {
+                classColors[cls.name] = cls.color;
+                const option = document.createElement('option');
+                option.value = cls.name;
+                option.textContent = cls.name;
+                option.style.color = cls.color;
+                classSelector.appendChild(option);
+            });
+        });
+
+    // Añadir nueva clase
+    document.getElementById('addClass').addEventListener('click', () => {
+        const newClass = document.getElementById('newClass').value;
+        if (!newClass) {
+            alert('Introduce un nombre para la clase');
+            return;
+        }
+
+        fetch('/manage_classes/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ name: newClass }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    classColors[data.class.name] = data.class.color;
+                    const option = document.createElement('option');
+                    option.value = data.class.name;
+                    option.textContent = data.class.name;
+                    option.style.color = data.class.color;
+                    classSelector.appendChild(option);
+                } else {
+                    alert(data.message);
+                }
+            });
+    });
+
+    // Cambiar la clase seleccionada
+    classSelector.addEventListener('change', (e) => {
+        selectedClass = e.target.value;
+        console.log('Clase seleccionada:', selectedClass); // Depuración
+    });
+
+    // Iniciar el dibujo al presionar el ratón
+    stage.on('mousedown', (e) => {
+        if (e.target === background && selectedClass) {
+            isDrawing = true;
+            startX = e.evt.layerX;
+            startY = e.evt.layerY;
+
+            // Crear un rectángulo temporal
+            currentRect = new Konva.Rect({
+                x: startX,
+                y: startY,
+                width: 0,
+                height: 0,
+                stroke: classColors[selectedClass],
+                strokeWidth: 2,
+                draggable: false,
+                name: selectedClass,
+            });
+
+            drawingLayer.add(currentRect);
+            drawingLayer.draw();
+        }
+    });
+
+    // Dibujar el rectángulo mientras se arrastra el ratón
+    stage.on('mousemove', (e) => {
+        if (isDrawing && currentRect) {
+            const mouseX = e.evt.layerX;
+            const mouseY = e.evt.layerY;
+
+            const width = mouseX - startX;
+            const height = mouseY - startY;
+
+            currentRect.width(Math.abs(width));
+            currentRect.height(Math.abs(height));
+
+            if (width < 0) currentRect.x(mouseX);
+            if (height < 0) currentRect.y(mouseY);
+
+            drawingLayer.draw();
+        }
+    });
+
+    // Finalizar el dibujo al soltar el ratón
+    stage.on('mouseup', () => {
+        if (isDrawing) {
+            isDrawing = false;
+            currentRect.draggable(true); // Hacer el rectángulo movible
+            transformer.nodes([currentRect]); // Asignar el transformador
+            currentRect = null;
+        }
+    });
+
+    // Guardar etiquetas
+    document.getElementById('save').addEventListener('click', () => {
+        const boxes = [];
+        drawingLayer.children.forEach((child) => {
+            if (child.className === 'Rect') {
+                boxes.push({
+                    class: child.name(),
+                    x: child.x() / width,
+                    y: child.y() / height,
+                    width: child.width() / width,
+                    height: child.height() / height,
+                });
+            }
+        });
+
+        fetch('/save_annotations/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                image_id: {{ image.id }},
+                annotations: boxes,
+            }),
+        }).then((response) => {
+            if (response.ok) {
+                alert('Etiquetas guardadas exitosamente!');
+            }
+        });
+    });
+
+    document.getElementById('download').addEventListener('click', () => {
+        window.location.href = `/download_yolo/{{ image.id }}/`;
+    });
+
+</script>
+
+{% endblock %}
