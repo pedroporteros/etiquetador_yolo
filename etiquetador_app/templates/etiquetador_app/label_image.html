@@ -11,21 +11,26 @@
 
 {% block content %}
 
-<h1>Etiquetar Imagen: {{ image.name }}</h1>
+<h1 class="mb-4">Etiquetar Imagen: {{ image.name }}</h1>
 
-<label for="classSelector">Clase:</label>
-<select id="classSelector">
+<label for="classSelector" class="form-label">Clase:</label>
+<select id="classSelector" class="form-select mb-3">
     <option value="" disabled selected>No seleccionada</option>
 </select>
-<input type="text" id="newClass" placeholder="Nueva clase" />
-<button id="addClass">Añadir Clase</button>
 
-<div id="container"></div>
-<button id="save">Guardar Etiquetas</button>
-<button id="download">Descargar Etiquetas</button>
+<input type="text" id="newClass" placeholder="Nueva clase" class="form-control mb-3" />
+<button id="addClass" class="btn btn-primary mb-3">Añadir Clase</button>
+
+<div id="container" class="border mb-3" style="width: 800px; height: 600px;"></div>
+
+<button id="save" class="btn btn-success me-2">Guardar Etiquetas</button>
+<button id="download" class="btn btn-secondary">Descargar Etiquetas</button>
+
+<a href="{% url 'etiquetador_app:image_list' %}" class="btn btn-secondary">Ir a listado</a>
 
 <script>
 
+    // Cargar las etiquetas de la imagen
     fetch(`/load_annotations/{{ image.id }}/`)
     .then((response) => response.json())
     .then((data) => {

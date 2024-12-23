@@ -7,16 +7,16 @@
 
 {% block content %}
 
-<h1>Imagenes</h1>
+<h1 class="mb-4">Imágenes</h1>
 
-<ul>
+<ul class="list-group mb-3">
     {% for image in images %}
-    <li>
+    <li class="list-group-item">
         <a href="{% url 'etiquetador_app:label_image' image.id %}">{{ image.name }}</a>
     </li>
     {% endfor %}
 </ul>
 
-<a href="{% url 'etiquetador_app:upload_image' %}">Cargar Imagen</a>
+<a href="{% url 'etiquetador_app:upload_image' %}" class="btn btn-primary">Cargar Imagen</a>
 
 {% endblock %}

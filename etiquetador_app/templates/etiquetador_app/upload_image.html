@@ -6,10 +6,12 @@
 {% endblock %}
 
 {% block content %}
-<h1>Cargar Imagen</h1>
-<form method="post" enctype="multipart/form-data">
+<h1 class="mb-4">Cargar Imagen</h1>
+<form method="post" enctype="multipart/form-data" class="mb-4">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Cargar</button>
+    <button type="submit" class="btn btn-success">Cargar</button>
+
+    <a href="{% url 'etiquetador_app:image_list' %}" class="btn btn-secondary">Ir a listado</a>
 </form>
 {% endblock %}
