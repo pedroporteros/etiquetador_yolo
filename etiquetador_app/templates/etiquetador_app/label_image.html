@@ -29,43 +29,6 @@
 <a href="{% url 'etiquetador_app:image_list' %}" class="btn btn-secondary">Ir a listado</a>
 
 <script>
-
-    // Cargar las etiquetas de la imagen
-    fetch(`/load_annotations/{{ image.id }}/`)
-    .then((response) => response.json())
-    .then((data) => {
-        data.annotations.forEach((annotation) => {
-            const box = new Konva.Rect({
-                x: annotation.x * width,
-                y: annotation.y * height,
-                width: annotation.width * width,
-                height: annotation.height * height,
-                stroke: classColors[annotation.class] || 'black',
-                strokeWidth: 2,
-                draggable: true,
-                name: annotation.class,
-            });
-
-            drawingLayer.add(box);
-
-            // Permitir redimensionar con transformador
-            box.on('click', () => {
-                transformer.nodes([box]);
-                drawingLayer.draw();
-            });
-
-            box.on('transform', () => {
-                const newWidth = box.width() * box.scaleX();
-                const newHeight = box.height() * box.scaleY();
-                box.width(newWidth);
-                box.height(newHeight);
-                box.scaleX(1);
-                box.scaleY(1);
-            });
-        });
-
-        drawingLayer.draw();
-    });
     
     const width = 800;
     const height = 600;
@@ -239,7 +202,7 @@
     document.getElementById('save').addEventListener('click', () => {
         const boxes = [];
         drawingLayer.children.forEach((child) => {
-            if (child.className === 'Rect') {
+            if (child.className === 'Rect' && child.name() !== '') {
                 boxes.push({
                     class: child.name(),
                     x: child.x() / width,
@@ -249,7 +212,7 @@
                 });
             }
         });
-
+    
         fetch('/save_annotations/', {
             method: 'POST',
             headers: {
@@ -265,6 +228,43 @@
                 alert('Etiquetas guardadas exitosamente!');
             }
         });
+    });
+
+    // Cargar las etiquetas de la imagen
+    fetch(`/load_annotations/{{ image.id }}/`)
+    .then((response) => response.json())
+    .then((data) => {
+        data.annotations.forEach((annotation) => {
+            const box = new Konva.Rect({
+                x: annotation.x * width,
+                y: annotation.y * height,
+                width: annotation.width * width,
+                height: annotation.height * height,
+                stroke: classColors[annotation.class] || 'black',
+                strokeWidth: 2,
+                draggable: true,
+                name: annotation.class,
+            });
+
+            drawingLayer.add(box);
+
+            // Permitir redimensionar con transformador
+            box.on('click', () => {
+                transformer.nodes([box]);
+                drawingLayer.draw();
+            });
+
+            box.on('transform', () => {
+                const newWidth = box.width() * box.scaleX();
+                const newHeight = box.height() * box.scaleY();
+                box.width(newWidth);
+                box.height(newHeight);
+                box.scaleX(1);
+                box.scaleY(1);
+            });
+        });
+
+        drawingLayer.draw();
     });
 
     document.getElementById('download').addEventListener('click', () => {

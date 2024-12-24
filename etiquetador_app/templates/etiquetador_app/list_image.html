@@ -13,6 +13,7 @@
     {% for image in images %}
     <li class="list-group-item">
         <a href="{% url 'etiquetador_app:label_image' image.id %}">{{ image.name }}</a>
+        <a href="{% url 'etiquetador_app:delete_image' image.id %}" class="btn btn-danger btn-sm float-end">Eliminar</a>
     </li>
     {% endfor %}
 </ul>
