@@ -20,7 +20,7 @@ Una vez activado el entorno virtual, procedemos a instalar las dependencias nece
 pip install -r requirements.txt
 ```
 
-Una vez intsladas las dependencias, ya podemos lanzar el servidor:
+Una vez intaladas las dependencias, ya podemos lanzar el servidor:
 
 ```
 python .\manage.py runserver
