@@ -40,6 +40,9 @@ def save_annotations(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         image = get_object_or_404(Image, id=data['image_id'])
+        
+        if not data['annotations']:
+            return JsonResponse({'status': 'error', 'message': 'No se han realizado anotaciones'}, status=400)
 
         image.annotations.all().delete()
 
