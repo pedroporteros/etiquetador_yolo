@@ -9,13 +9,6 @@ class Image(models.Model):
     def __str__(self):
         return self.name
     
-class Annotation(models.Model):
-    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='annotations')
-    category = models.CharField(max_length=50)
-    x_center = models.FloatField()
-    y_center = models.FloatField()
-    width = models.FloatField()
-    height = models.FloatField()
 
 class AnnotationClass(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -23,3 +16,12 @@ class AnnotationClass(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
+class Annotation(models.Model):
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='annotations')
+    category = models.ForeignKey(AnnotationClass, on_delete=models.CASCADE)
+    x_center = models.FloatField()
+    y_center = models.FloatField()
+    width = models.FloatField()
+    height = models.FloatField()

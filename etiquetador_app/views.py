@@ -47,13 +47,15 @@ def save_annotations(request):
         image.annotations.all().delete()
 
         for annotation in data['annotations']:
+            annotation_class = get_object_or_404(AnnotationClass, name=annotation['class'])
+            
             Annotation.objects.create(
                 image=image,
                 x_center=annotation['x'] + annotation['width'] / 2,
                 y_center=annotation['y'] + annotation['height'] / 2,
                 width=annotation['width'],
                 height=annotation['height'],
-                category=annotation['class']
+                category=annotation_class
             )
         return JsonResponse({'status': 'success'})
 
@@ -62,7 +64,7 @@ def load_annotations(request, image_id):
     annotations = Annotation.objects.filter(image_id=image_id)
     data = [
         {
-            "class": annotation.category,
+            "class": annotation.category.name,
             "x": annotation.x_center - annotation.width / 2,
             "y": annotation.y_center - annotation.height / 2,
             "width": annotation.width,
@@ -77,8 +79,11 @@ def download_yolo(request, image_id):
     image = get_object_or_404(Image, id=image_id)
     annotations = image.annotations.all()
 
+    classes = AnnotationClass.objects.all()
+    class_to_idx = {cls.name: idx for idx, cls in enumerate(classes)}
+
     yolo_data = "\n".join([
-        f"0 {ann.x_center} {ann.y_center} {ann.width} {ann.height}"
+        f"{class_to_idx[ann.category.name]} {ann.x_center} {ann.y_center} {ann.width} {ann.height}"
         for ann in annotations
     ])
 
